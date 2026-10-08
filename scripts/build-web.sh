@@ -2,6 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p dist
+python3 -m unittest discover -s scripts -p test_package_web.py
 em++ src/platform/web/main.cpp src/libs/stb_vorbis/stb_vorbis.c src/libs/tinf/tinflate.c \
   -O3 -ffast-math -fmax-type-align=2 -std=c++11 -Wno-c++11-narrowing -Werror=extra-tokens \
   -Isrc -DOPENLARA_BROWSER_DEMO \
@@ -11,7 +12,7 @@ em++ src/platform/web/main.cpp src/libs/stb_vorbis/stb_vorbis.c src/libs/tinf/ti
   --preload-file src/platform/web/assets/level@/level \
   --preload-file src/platform/web/assets/audio@/audio \
   -o dist/xraiders_wasm.js
-cp src/platform/web/index.html dist/index.html
+python3 scripts/package_web.py
 cp LICENSE dist/LICENSE.txt
 cp src/platform/web/ASSETS.md dist/ASSETS.txt
 touch dist/.nojekyll

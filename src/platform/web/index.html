@@ -2,6 +2,18 @@
 <html lang="en">
 		<head>
 			<title>X-Raiders — Play in your browser</title>
+            <meta name="description" content="Play the Tomb Raider I City of Vilcabamba demo in your desktop browser. No installation required.">
+            <link rel="canonical" href="https://b00ag3.github.io/x-raiders/">
+            <meta property="og:type" content="website">
+            <meta property="og:title" content="X-Raiders — Play in your browser">
+            <meta property="og:description" content="Play the Tomb Raider I City of Vilcabamba demo. Desktop keyboard controls; no installation required.">
+            <meta property="og:url" content="https://b00ag3.github.io/x-raiders/">
+            <meta property="og:image" content="https://b00ag3.github.io/x-raiders/preview.png">
+            <meta name="twitter:card" content="summary_large_image">
+            <meta name="twitter:title" content="X-Raiders — Play in your browser">
+            <meta name="twitter:description" content="Play the Tomb Raider I City of Vilcabamba demo. Desktop keyboard controls; no installation required.">
+            <meta name="twitter:image" content="https://b00ag3.github.io/x-raiders/preview.png">
+            <meta name="twitter:image:alt" content="Lara Croft exploring the City of Vilcabamba in the playable Tomb Raider I demo.">
 			<style>
 			html {
 				overflow: auto;
@@ -41,6 +53,13 @@
             canvas:focus-visible { outline-color: #666; }
             h1 { font-size: 1.5rem; margin: 0 0 .5rem; }
             #status { min-height: 1.5em; }
+            #status { overflow-wrap: anywhere; }
+            .toolbar { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+            #fullGame { display: none; }
+            .embedded body { margin: 0; padding: .5rem; max-width: none; height: 100vh; box-sizing: border-box; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: .5rem; }
+            .embedded h1, .embedded #intro, .embedded #info, .embedded .game-break { display: none; }
+            .embedded #fullGame { display: inline; }
+            .embedded .game { width: 100%; height: 100%; min-height: 0; aspect-ratio: auto; }
             </style>
 			<meta charset="utf-8">
 			<meta name="apple-mobile-web-app-capable" content="yes">
@@ -50,14 +69,33 @@
 		</head>
 		<body>
 			<h1>X-Raiders</h1>
-            <p>Tomb Raider I demo · City of Vilcabamba</p>
-            <button id="goFS" disabled>Go fullscreen</button>
-			<canvas class="game" id="canvas" tabindex="0" aria-label="Tomb Raider game. Use arrow keys to move, Space to jump, Control for actions and Escape for the inventory." width="854" height="480" oncontextmenu="event.preventDefault()"></canvas><br>
+            <p id="intro">Tomb Raider I demo · City of Vilcabamba · Desktop keyboard required</p>
+            <div class="toolbar">
+                <button id="goFS" disabled>Go fullscreen</button>
+                <button id="retryGame" hidden>Reload game</button>
+                <a id="fullGame" href="./" target="_blank" rel="noopener">Open full game</a>
+            </div>
+			<canvas class="game" id="canvas" tabindex="0" aria-label="Tomb Raider game. Use arrow keys to move, Space to jump, Control for actions and Escape for the inventory." width="854" height="480" oncontextmenu="event.preventDefault()"></canvas><br class="game-break">
 			<div id="status" role="status" aria-live="polite">Loading engine…</div>
 			<script>
 				var statusElement = document.getElementById('status');
 				var canvasElement = document.getElementById('canvas');
 				var proc;
+                var gameFailed = false;
+                function gameLoadError(reason) {
+                    gameFailed = true;
+                    var detail = String(reason && reason.message || reason || 'Unknown startup error');
+                    statusElement.textContent = 'The game could not load: ' + detail + '. Choose Reload game to retry.';
+                    document.getElementById('retryGame').hidden = false;
+                    document.getElementById('goFS').disabled = true;
+                    document.getElementById('browseLevel').disabled = true;
+                    console.error(reason);
+                }
+                document.getElementById('retryGame').addEventListener('click', function() {
+                    var freshURL = new URL(location.href);
+                    freshURL.searchParams.set('reload', Date.now());
+                    location.replace(freshURL.href);
+                });
 
 				function fullscreen(container) {
 					Module.ccall('change_fs_mode', null, [], []);
@@ -72,9 +110,7 @@
                     onRuntimeInitialized: function() {
                         Module.setStatus('Starting game…');
                     },
-                    onAbort: function() {
-                        Module.setStatus('The game could not start. Reload the page and try again.');
-                    },
+                    onAbort: gameLoadError,
 					preRun: [],
 					postRun: [],
 					print: (function() {
@@ -96,6 +132,7 @@
 						return canvasElement;
 					})(),
 					setStatus: function(text) {
+						if (gameFailed) return;
 						if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
 						if (text === Module.setStatus.text) return;
 						statusElement.textContent = text;
@@ -112,7 +149,10 @@
 				function snd_init() {
 					var AudioContext = window.AudioContext || window.webkitAudioContext;
 					if (!AudioContext) return;
-					audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    try {
+					    audioContext = new AudioContext();
+                        // Gameplay starts silently, including in an autoplay-enabled frame.
+                        audioContext.suspend();
 					var count  = 4096;
 					var rate   = 44100 / audioContext.sampleRate;
 					var framesCount = Math.ceil(count * rate);
@@ -129,6 +169,9 @@
 						}
 					}
 					proc.connect(audioContext.destination);
+                    } catch (error) {
+                        console.warn('Sound is unavailable; gameplay can continue.', error);
+                    }
 				}
 
 				function getLanguage() {
@@ -186,14 +229,12 @@
                 window.addEventListener('keydown', userAction, false);
 
 				Module.setStatus('Loading engine…');
-				window.onerror = function(event) {
-					Module.setStatus('The game could not load. Reload the page and try again.');
-					//spinnerElement.style.display = 'none';
-					statusElement.textContent = 'The game could not load. Reload the page and try again.';
-					Module.setStatus = function(text) {
-						if (text) Module.printErr('[post-exception status] ' + text);
-					};
-				};
+                window.onerror = function(message, source, line, column, error) {
+                    gameLoadError(error || message);
+                };
+                window.addEventListener('unhandledrejection', function(event) {
+                    gameLoadError(event.reason);
+                });
 			</script>
 
 			<div id="info">
@@ -205,11 +246,8 @@
 			</div>
 
 			<script>
-				var script = document.createElement('script');
-
-                script.src = "xraiders_wasm.js";
-                script.onerror = function() { Module.setStatus('The engine download failed. Reload the page to retry.'); };
                 function browserGameReady() {
+                    if (gameFailed) return;
                     document.getElementById('goFS').disabled = false;
                     document.getElementById('browseLevel').disabled = false;
                     Module.setStatus('Playing the demo. Click the game to focus the controls.');
@@ -218,7 +256,30 @@
                     }
                 }
 
-				document.body.appendChild(script);
+                async function loadBrowserEngine() {
+                    var controller = new AbortController();
+                    var timeout = setTimeout(function() { controller.abort(); }, 20000);
+                    try {
+                        // Always resolve the current release, even when the HTML is cached.
+                        var manifestURL = new URL('build.json', location.href);
+                        manifestURL.searchParams.set('fresh', Date.now());
+                        var response = await fetch(manifestURL, { cache: 'no-store', signal: controller.signal });
+                        if (!response.ok) throw new Error('Engine manifest download failed (HTTP ' + response.status + ')');
+                        var release = await response.json();
+                        if (!/^xraiders-[a-f0-9]{16}\.js$/.test(release.engine)) throw new Error('Invalid engine manifest');
+                        var engineURL = new URL(release.engine, manifestURL);
+                        Module.locateFile = function(path) { return new URL(path, engineURL).href; };
+                        var script = document.createElement('script');
+                        script.src = engineURL.href;
+                        script.onerror = function() { gameLoadError('Engine download failed'); };
+                        document.body.appendChild(script);
+                    } catch (error) {
+                        gameLoadError(error.name === 'AbortError' ? 'Engine download timed out' : error);
+                    } finally {
+                        clearTimeout(timeout);
+                    }
+                }
+                loadBrowserEngine();
 
 				function readLevel(event) {
 					if (!event.target.files.length) return;

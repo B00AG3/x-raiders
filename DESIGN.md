@@ -36,3 +36,23 @@ introduced by this narrow change. Audio unlocks on the first click, tap, or keyp
 Desktop focus enters the canvas when ready only if the user has not focused another
 control; mobile startup does not force focus. Engine rendering is essential game
 motion; Escape opens the inventory. No decorative shell motion is added.
+
+Desktop X sharing extension: retain the approved shell and engine. `x.html` uses
+experimental Player Card metadata; `play.html` reuses the same HTML in a compact
+854 × 540 frame with the original fullscreen control, a native full-game link,
+and visible status/recovery. The default page uses an image link card. This is a
+metadata/embedding adaptation, not a new visual identity. No mobile changes are
+in scope. No X logo, other company marks, new icon family, catalog component,
+marketing layout, or decorative assets are introduced. The existing native
+controls and engine are the verified reused sources; the preview is an actual
+desktop game screenshot in src/platform/web/preview.png. The packager generates
+all three pages from src/platform/web/index.html, preventing shell divergence.
+
+Reliability: the launcher obtains fresh release metadata and loads content-versioned
+engine/data files together; error messages expose the failure and enable retry.
+The compact frame fills its available height; error copy wraps rather than clips.
+Audio remains suspended until a user interaction. Retain keyboard focus visibility
+and Tab escape from the canvas. Test normal and compact desktop widths, warm/cold
+startup, missing-manifest recovery, and iframe permissions. X inline rendering
+is a platform-controlled outcome and must not be reported as verified without an
+actual post.

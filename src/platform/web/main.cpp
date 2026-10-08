@@ -48,7 +48,7 @@ void onExists(void *arg, int exists) {
 }
 
 void osDownload(Stream *stream) {
-    #ifdef X-RAIDERS_BROWSER_DEMO
+    #ifdef OPENLARA_BROWSER_DEMO
         // The Pages build preloads all shipped files. Missing optional retail
         // assets should use the existing fallback without issuing HTTP 404s.
         onError(stream);
@@ -155,7 +155,7 @@ void joyUpdate() {
 void main_loop() {
     joyUpdate();
 
-    #ifdef X-RAIDERS_BROWSER_DEMO
+    #ifdef OPENLARA_BROWSER_DEMO
         static bool reportedReady = false;
         if (!reportedReady && Game::level) {
             reportedReady = true;
@@ -362,7 +362,7 @@ int main() {
     emscripten_set_mousemove_callback("#canvas", 0, 1, mouseCallback);
     
     emscripten_run_script("getLanguage()");
-    #ifdef X-RAIDERS_BROWSER_DEMO
+    #ifdef OPENLARA_BROWSER_DEMO
         Game::init("level/1/LEVEL2.PHD");
     #else
         Game::init();

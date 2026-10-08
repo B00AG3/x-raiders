@@ -1004,7 +1004,7 @@ namespace TR {
     }
 
     LevelID getStartId(Version version) {
-        #ifdef X-RAIDERS_BROWSER_DEMO
+        #ifdef OPENLARA_BROWSER_DEMO
             if ((version & VER_VERSION) == VER_TR1) return LVL_TR1_2;
         #endif
         switch (version & VER_VERSION) {

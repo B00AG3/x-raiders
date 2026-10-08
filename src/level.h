@@ -100,7 +100,7 @@ struct Level : IGame {
     //    else
     //#endif
         id = (level.isEnd() || level.isHome()) ? level.getTitleId() : TR::LevelID(level.id + 1);
-        #ifdef X-RAIDERS_BROWSER_DEMO
+        #ifdef OPENLARA_BROWSER_DEMO
             if (level.isDemoLevel) id = TR::LVL_TR1_2;
         #endif
 

@@ -1,0 +1,1 @@
+curl --ftp-method nocwd -T X-Raiders.self ftp://192.168.1.39:1337/ux0:/app/X-RAIDERS1/eboot.bin
